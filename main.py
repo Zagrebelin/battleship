@@ -1,9 +1,12 @@
 import random
 from collections import Counter
-
 import itertools
+import tkinter
+
 from PIL import Image, ImageDraw
+
 import heatmap
+
 
 class Game:
     def __init__(self, ships_config=None, xs=None, ys=None):
@@ -51,14 +54,13 @@ class Game:
         lo, high = min(c.values()), max(c.values())
         for x, _ in enumerate(self.xs):
             for y, _ in enumerate(self.ys):
-                this_cell_count = c[x,y]
+                this_cell_count = c[x, y]
                 xy0 = (10 + x * size, 10 + y * size)
                 xy1 = (10 + x * size + size, 10 + y * size + size)
                 color = heatmap.get_color(scheme_name, lo, high, this_cell_count)
                 d.rectangle([xy0, xy1], fill=color, outline='black')
-                d.text((xy0[0]+size/2, xy0[1]+size/2), f'{this_cell_count}     ')
+                d.text((xy0[0] + size / 2, xy0[1] + size / 2), f'{this_cell_count}     ')
         i.show()
-        i.close()
 
     def choise_shot(self):
         ships_to_shot = []
@@ -75,7 +77,7 @@ class Game:
 
         random.choices(list(all_cells.keys()), weights=list(all_cells.values()))
         max_cell = all_cells.most_common()[0][1]
-        cells_to_shot = [cell for cell, count in all_cells.items() if count==max_cell]
+        cells_to_shot = [cell for cell, count in all_cells.items() if count == max_cell]
         return random.choice(cells_to_shot)
 
     def miss(self, xy):
@@ -95,8 +97,8 @@ class Game:
         forbiden_cells = []
         for cell in self.wounds:
             forbiden_cells.append(cell)
-            for dx, dy in itertools.product([-1,0,1], [-1,0,1]):
-                forbiden_cells.append((cell[0]+dx, cell[1]+dy))
+            for dx, dy in itertools.product([-1, 0, 1], [-1, 0, 1]):
+                forbiden_cells.append((cell[0] + dx, cell[1] + dy))
         for ship in self.alive_ships:
             if any(cell in forbiden_cells for cell in ship):
                 ships_to_remove.append(ship)
@@ -105,25 +107,50 @@ class Game:
         self.wounds = []
 
 
-if __name__ == '__main__':
-    g = Game()
-    while True:
-        cell = g.choise_shot()
-        print(cell, g.xs[cell[0]], g.ys[cell[1]])
-        result = None
-        while not result or result not in '123sq':
-            result = input('Промах/ранен/убит [123]? [S]how field? [Q]uit?')
-        if result == '1': # miss
-            g.miss(cell)
-            continue
-        elif result == '2': # ранен
-            g.wound(cell)
-            continue
-        elif result == '3':
-            g.died(cell)
-            continue
-        elif result == 'q':
-            break
-        elif result == 's':
-            g.show_field('fire')
+def x(*a, **kw):
+    print(a, kw)
 
+
+class ViewModel:
+    def __init__(self, root):
+        self.game = Game()
+        self.cell_as_text = tkinter.StringVar(root)
+        self.next_cell()
+
+    def cmd_miss(self):
+        self.game.miss(self.cell)
+        self.next_cell()
+
+    def cmd_wound(self):
+        self.game.wound(self.cell)
+        self.next_cell()
+
+    def cmd_died(self):
+        self.game.died(self.cell)
+        self.next_cell()
+
+    def next_cell(self):
+        self.cell = self.game.choise_shot()
+        x = self.game.xs[self.cell[0]]
+        y = self.game.ys[self.cell[1]]
+        self.cell_as_text.set('%s %s' % (x,y))
+
+    def cmd_reset(self):
+        self.game = Game()
+        self.next_cell()
+
+    def cmd_show(self):
+        self.game.show_field('fire')
+
+
+if __name__ == '__main__':
+    root = tkinter.Tk()
+    vm = ViewModel(root)
+    tkinter.Label(root, textvariable=vm.cell_as_text).pack()
+    tkinter.Button(root, text='Промах', command=vm.cmd_miss).pack()
+    tkinter.Button(root, text='Ранен', command=vm.cmd_wound).pack()
+    tkinter.Button(root, text='Убит', command=vm.cmd_died).pack()
+    tkinter.Button(root, text='Всё сначала', command=vm.cmd_reset).pack()
+    tkinter.Button(root, text='Поле', command=vm.cmd_show).pack()
+
+    root.mainloop()
