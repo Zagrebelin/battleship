@@ -1,6 +1,6 @@
 import tkinter
 
-from logic import Game
+from logic import Game, CellState
 
 """
 
@@ -52,8 +52,8 @@ class ViewModel:
 
     def next_cell(self):
         self.cell = self.game.choise_shot()
-        x = self.game.xs[self.cell[0]]
-        y = self.game.ys[self.cell[1]]
+        x = 'абвгдежзик'[self.cell[0]]
+        y = self.cell[1]+1
         self.cell_as_text.set('%s %s' % (x,y))
 
     def cmd_reset(self):
@@ -61,7 +61,20 @@ class ViewModel:
         self.next_cell()
 
     def cmd_show(self):
-        self.game.show_field('fire')
+        stat = self.game.show_field()
+        for y in range(self.game.ys):
+            for x in range(self.game.xs):
+                cell = stat[x,y]
+                if cell['state'] == CellState.miss:
+                    ch = '.'
+                elif cell['state'] == CellState.dead:
+                    ch = 'X'
+                else:
+                    ch = str(cell['count'])
+                print('%3s' % ch, end='   ')
+            print()
+        print()
+
 
 
 if __name__ == '__main__':

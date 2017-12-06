@@ -11,28 +11,25 @@ class CellState(Enum):
 
 
 class Game:
-    def __init__(self, ships_config=None, xs=None, ys=None):
+    def __init__(self, ships_config=None, xs=10, ys=10):
         if ships_config is None:
             ships_config = [(4, 1), (3, 2), (2, 3), (1, 4)]
-        if xs is None:
-            self.xs = list('абвгдежзик')
-        if ys is None:
-            self.ys = list(range(1, 11))
+        self.xs = xs
+        self.ys = ys
         self.ships = []                         # список всех кораблей, которые могут стоять на поле. Из этого списка убираем по сигналу "промах".
         self.rest_ships = dict(ships_config)    # количество кораблей разного размера, которые где-то на поле.
         self.misses = []
         self.deads = []
         for size, count in ships_config:
-            for y, _ in enumerate(self.ys):
-                for x in range(len(self.xs) - size + 1):
+            for y in range(self.ys):
+                for x in range(self.xs - size + 1):
                     this_ship = []
                     for offset in range(size):
-                        if x + offset <= len(self.xs):
-                            this_ship.append((x + offset, y))
+                        this_ship.append((x + offset, y))
                     self.ships.append(this_ship)
             if size > 1:
-                for x, _ in enumerate(self.xs):
-                    for y in range(len(self.ys) - size + 1):
+                for x in range(self.xs):
+                    for y in range(self.ys - size + 1):
                         this_ship = []
                         for offset in range(size):
                             this_ship.append((x, y + offset))
@@ -40,23 +37,22 @@ class Game:
         self.misses = []  # тут отмечаем все промахи по чужому полю
         self.wounds = []  # тут отмечаем все раненые ячейки
 
-    def show_field(self, scheme_name):
+    def show_field(self):
         c = Counter()
         for ship in self.ships:
             c.update(ship)
         ret = {}
-        for x, _ in enumerate(self.xs):
-            for y, _ in enumerate(self.ys):
-                if (x, y) in self.misses:
-                    state = CellState.miss
-                elif (x, y) in self.deads:
-                    state = CellState.dead
-                else:
-                    state = CellState.unknown
-                ret[x, y] = {
-                    'state': state,
-                    'count': c[x, y]
-                }
+        for xy in itertools.product(range(self.xs), range(self.ys)):
+            if xy in self.misses:
+                state = CellState.miss
+            elif xy in self.deads:
+                state = CellState.dead
+            else:
+                state = CellState.unknown
+            ret[xy] = {
+                'state': state,
+                'count': c[xy]
+            }
         return ret
 
     def choise_shot(self):
