@@ -1,10 +1,13 @@
 import itertools
 import random
 from collections import Counter
+from enum import Enum, auto
 
-from PIL import Image, ImageDraw
 
-import heatmap
+class CellState(Enum):
+    unknown = auto()
+    dead = auto()
+    miss = auto
 
 
 class Game:
@@ -17,6 +20,8 @@ class Game:
             self.ys = list(range(1, 11))
         self.all_ships = []
         self.rest_ships = dict(ships_config)
+        self.misses = []
+        self.deads = []
         for size, count in ships_config:
             for y, _ in enumerate(self.ys):
                 for x in range(len(self.xs) - size + 1):
@@ -38,29 +43,23 @@ class Game:
         self.wounds = []  # тут отмечаем все раненые ячейки
 
     def show_field(self, scheme_name):
-        colors = {
-            1: (255, 0, 0, 30),
-            2: (0, 255, 0, 50),
-            3: (0, 255, 255, 30),
-            4: (0, 0, 255, 30),
-        }
-        size = 50
-        i = Image.new('RGB', (20 + size * len(self.xs), 20 + size * len(self.ys)))
-        d = ImageDraw.Draw(i, 'RGB')
-        d.rectangle([(0, 0), i.size], fill='gray')
         c = Counter()
         for ship in self.alive_ships:
             c.update(ship)
-        lo, high = min(c.values()), max(c.values())
+        ret = {}
         for x, _ in enumerate(self.xs):
             for y, _ in enumerate(self.ys):
-                this_cell_count = c[x, y]
-                xy0 = (10 + x * size, 10 + y * size)
-                xy1 = (10 + x * size + size, 10 + y * size + size)
-                color = heatmap.get_color(scheme_name, lo, high, this_cell_count)
-                d.rectangle([xy0, xy1], fill=color, outline='black')
-                d.text((xy0[0] + size / 2, xy0[1] + size / 2), f'{this_cell_count}     ')
-        i.show()
+                if (x, y) in self.misses:
+                    state = CellState.miss
+                elif (x, y) in self.deads:
+                    state = CellState.dead
+                else:
+                    state = CellState.unknown
+                ret[x, y] = {
+                    'state': state,
+                    'count': c[x, y]
+                }
+        return ret
 
     def choise_shot(self):
         ships_to_shot = []
@@ -81,6 +80,7 @@ class Game:
         return random.choice(cells_to_shot)
 
     def miss(self, xy):
+        self.misses.append(xy)
         ships_to_remove = []
         for ship in self.alive_ships:
             if xy in ship:
@@ -89,10 +89,11 @@ class Game:
             self.alive_ships.remove(ship)
 
     def wound(self, xy):
+        self.deads.append(xy)
         self.wounds.append(xy)
 
     def died(self, xy):
-        self.wounds.append(xy)
+        self.wound(xy)
         sank_ship_size = len(self.wounds)
         self.rest_ships[sank_ship_size] -= 1
 
@@ -105,7 +106,7 @@ class Game:
         for ship in self.alive_ships:
             if any(cell in forbiden_cells for cell in ship):
                 ships_to_remove.append(ship)
-            if self.rest_ships[sank_ship_size] == 0 and len(ship)==sank_ship_size:
+            if self.rest_ships[sank_ship_size] == 0 and len(ship) == sank_ship_size:
                 ships_to_remove.append(ship)
         for ship in ships_to_remove:
             if ship in self.alive_ships:

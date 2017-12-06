@@ -2,7 +2,35 @@ import tkinter
 
 from logic import Game
 
+"""
 
+        colors = {
+            1: (255, 0, 0, 30),
+            2: (0, 255, 0, 50),
+            3: (0, 255, 255, 30),
+            4: (0, 0, 255, 30),
+        }
+        size = 50
+        i = Image.new('RGB', (20 + size * len(self.xs), 20 + size * len(self.ys)))
+        d = ImageDraw.Draw(i, 'RGB')
+        d.rectangle([(0, 0), i.size], fill='gray')
+        c = Counter()
+        for ship in self.alive_ships:
+            c.update(ship)
+        lo, high = min(c.values()), max(c.values())
+        for x, _ in enumerate(self.xs):
+            for y, _ in enumerate(self.ys):
+                this_cell_count = c[x, y]
+                xy0 = (10 + x * size, 10 + y * size)
+                xy1 = (10 + x * size + size, 10 + y * size + size)
+                color = heatmap.get_color(scheme_name, lo, high, this_cell_count)
+                d.rectangle([xy0, xy1], fill=color, outline='black')
+                d.text((xy0[0] + size / 2, xy0[1] + size / 2), f'{this_cell_count}     ')
+        i.show()
+from PIL import Image, ImageDraw
+import heatmap
+
+"""
 
 class ViewModel:
     def __init__(self, root):
