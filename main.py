@@ -17,6 +17,7 @@ class Game:
         if ys is None:
             self.ys = list(range(1, 11))
         self.all_ships = []
+        self.rest_ships = dict(ships_config)
         for size, count in ships_config:
             for y, _ in enumerate(self.ys):
                 for x in range(len(self.xs) - size + 1):
@@ -93,6 +94,9 @@ class Game:
 
     def died(self, xy):
         self.wounds.append(xy)
+        sank_ship_size = len(self.wounds)
+        self.rest_ships[sank_ship_size] -= 1
+
         ships_to_remove = []
         forbiden_cells = []
         for cell in self.wounds:
@@ -102,8 +106,11 @@ class Game:
         for ship in self.alive_ships:
             if any(cell in forbiden_cells for cell in ship):
                 ships_to_remove.append(ship)
+            if self.rest_ships[sank_ship_size] == 0 and len(ship)==sank_ship_size:
+                ships_to_remove.append(ship)
         for ship in ships_to_remove:
-            self.alive_ships.remove(ship)
+            if ship in self.alive_ships:
+                self.alive_ships.remove(ship)
         self.wounds = []
 
 
